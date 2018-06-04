@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <title>
+      3-D Secure 2 with Payment Request API
+    </title>
+    <script src='https://www.w3.org/Tools/respec/respec-w3c-common' async
+    class='remove'></script>
+    <script class='remove'>
+      var respecConfig = {
+          github: "https://github.com/w3c/3ds/",
+          shortName:  "3ds",
+          edDraftURI:   "https://w3c.github.io/3ds/",
+          specStatus: "unofficial",
+          editors: [
+                {
+                    name:      "Ian Jacobs",
+                    company:   "W3C"
+                }
+          ],
+          useExperimentalStyles: true,
+         license:      "w3c-software-doc",
+         wg:           "Web Payments Working Group",
+         wgURI:        "https://www.w3.org/Payments/WG/",
+         wgPublicList: "public-payments-wg",
+         issueBase:    "https://github.com/w3c/3ds/issues/",
+        localBiblio: {
+          "tokenized-card": {
+            "href": "https://w3c.github.io/webpayments-methods-tokenization/",
+            "publisher": "W3C",
+            "title": "Tokenized Card Payment"
+          },
+          "EMVCO-3DS": {
+            "href": "https://www.emvco.com/emv-technologies/3d-secure/",
+            "publisher": "EMVCo",
+            "title": "EMV® 3-D Secure"
+          },
+        },
+      };
+    </script>
+    <style>
+    dt { margin-top: 0.75em; }
+    table { margin-top: 0.75em; border-collapse:collapse; border-style:hidden hidden none hidden }
+    table thead { border-bottom:solid }
+    table tbody th:first-child { border-left:solid }
+    table td, table th { border-left:solid; border-right:solid; border-bottom:solid thin; vertical-align:top; padding:0.2em }
+    li { margin-top: 0.5em; margin-bottom: 0.5em;}
+    </style>
+  </head>
+  <body>
+    <section id="abstract">
+      <p>
+        This specification defines a way to leverage 3DS2 in conjunction with
+        [[payment-request]].
+      </p>
+    </section>
+    <section id='sotd'>
+      <p>
+        The working group maintains <a href=
+        "https://github.com/w3c/3ds/issues">a list of all bug reports that the
+        group has not yet addressed</a>. Pull requests with proposed
+        specification text for outstanding issues are strongly encouraged.
+      </p>
+    </section>
+    <section class="informative">
+      <h2>
+        Introduction
+      </h2>
+      <p>
+        EMV 3-D Secure is a messaging protocol developed by EMVCo to enable
+        users to authenticate themselves with their card issuer when making
+        card-not-present (CNP) e-commerce purchases. It is designed to prevent
+        unauthorized CNP transactions and to protect the payment ecosystem from
+        CNP-related fraud.
+      </p>
+      <p>
+        There are several reasons a merchant may wish to support 3DS 2.x
+        (3DS2), including (but not limited to):
+      </p>
+      <ul>
+        <li>To reduce CNP-related fraud.
+        </li>
+        <li>To increase approval rates.
+        </li>
+        <li>It is required by Central Bank mandate (e.g., in India).
+        </li>
+      </ul>
+      <p>
+        This specification defines a way to leverage 3DS2 in conjunction with
+        [[payment-request]]. At a high level, it works as follows:
+      </p>
+      <ul>
+        <li>3DS2 flows involve risk analysis that takes as input information
+        about the transaction, payee, and payer. The payee therefore creates a
+        <a>ThreeDSRequest</a> that is part of the payment method-specific
+        <a>data</a> in the <a>PaymentRequest</a>.
+        </li>
+        <li>The <a data-lt="ThreeDSRequest.requestLevel">requestLevel</a>
+        within the <a>ThreeDSRequest</a> contributes to the computation of
+        which <a>payment handlers</a> the user agent should offer to the user.
+        </li>
+        <li>Then the user selects a <a>payment handler</a> that supports 3DS2,
+        the user agent provides relevant data to the <a>payment handler</a> to
+        initiate 3DS flows. The details of how the <a>payment handler</a>
+        initiates 3DS flows lies outside the scope of this specification.
+        </li>
+        <li>Once the user has completed interactions with the <a>payment
+        handler</a>, the payment handler returns a <a>ThreeDSResponse</a> as
+        part of the <a>PaymentResponse</a>.
+        </li>
+      </ul>
+      <p>
+        See <a href="#howtouse">how to use this specification within a payment
+        method specification</a> below.
+      </p>
+    </section>
+    <section id="exampleData">
+      <h2>
+        Examples
+      </h2>
+      <p>
+        The following example illustrates how the Tokenized Card Payment
+        Specification [[tokenized-card]] could be enhanced to include support
+        for the current specification.
+      </p>
+      <section>
+        <h3 id="request-example">
+          Request Example
+        </h3>
+        <pre class="example" title="Request including 3DS2">
+const methodData = [{
+  supportedMethods: ["tokenized-card"],
+  data: {
+    supportedNetworks: ['mastercard', 'visa', 'amex', 'discover', 'jcb', 'unionpay'],
+    supportedTypes: ['credit','debit'],
+    keyProviderURL: 'https://pspKeyProvider.example/tokenizedCardPublicKey',
+    requestLevel: required
+  }
+}];
+
+const details = { ...total, etc.... };
+
+new PaymentRequest(methodData, details);
+        </pre>
+        <p>
+          The value <code>required</code> for <a data-lt=
+          "ThreeDSRequest.requestLevel">requestLevel</a> means that the payee
+          requires that for this payment method, a <a>payment handler</a> must
+          support 3DS2.
+        </p>
+      </section>
+      <section>
+        <h3>
+          Response Example
+        </h3>
+        <pre class="example" title="Response including 3DS2">
+{
+ displayLast4: "***6789",
+ displayExpiryMonth: "02",
+ displayExpiryYear: "22",
+ displayNetwork: "mastercard",
+ encryptedDetails: "QWxobHZ4bU4yWkt1QUFFU05GWjRHb0FCRkE9PQ==",
+ eci: "242", // for 3DS2
+ av: "...28 character authentication value ...", // for 3DS2
+ status: "...status code..." // for 3DS2
+}
+        </pre>
+      </section>
+    </section>
+    <section data-dfn-for="ThreeDSRequest" data-link-for="ThreeDSRequest">
+      <h2>
+        <dfn>ThreeDSRequest</dfn> dictionary
+      </h2>
+      <p>
+        This section describes payment method specific data that is supplied as
+        part of the <code>data</code> argument to the PaymentRequest
+        constructor.
+      </p>
+      <pre class="idl">
+        dictionary ThreeDSRequest{
+                   ThreeDSRequestLevel          requestLevel;
+        };
+      </pre>
+      <p>
+        The <code>ThreeDSRequest</code> dictionary contains the following
+        members:
+      </p>
+      <dl>
+        <dt>
+          <dfn>requestLevel</dfn>
+        </dt>
+        <dd>
+          This optional member represents the payee's requirements regarding
+          3DS flows for this payment method and this transaction. Absence of
+          this member indicates the payee's preference that the <a>payment
+          handler</a> not initiate 3DS2 flows.
+        </dd>
+        <dt>
+          <dfn>payeeData</dfn>
+        </dt>
+        <dd>
+          <p class="note">
+            Need to specify required merchant/payee data and the form this
+            should take (in terms of a dictionary).
+          </p>
+        </dd>
+      </dl>
+      <section data-dfn-for="ThreeDSRequestLevel" data-link-for=
+      "ThreeDSRequestLevel">
+        <h3>
+          <dfn>ThreeDSRequestLevel</dfn> enum
+        </h3>
+        <pre class="idl">
+          enum ThreeDSRequestLevel { "required", "optional" };
+        </pre>
+        <dl>
+          <dt>
+            "<dfn>required</dfn>"
+          </dt>
+          <dd>
+            The payee requires that, for this payment method and this
+            transaction, the <a>payment handler</a> MUST conduct a 3DS2 flow.
+          </dd>
+          <dt>
+            "<dfn>optional</dfn>"
+          </dt>
+          <dd>
+            The payee signals that, for this payment method and this
+            transaction, the <a>payment handler</a> MAY conduct a 3DS2 flow but
+            is not required to do so.
+          </dd>
+        </dl>
+      </section>
+    </section>
+    <section data-dfn-for="ThreeDSResponse" data-link-for="ThreeDSResponse">
+      <h2>
+        <dfn>ThreeDSResponse</dfn> dictionary
+      </h2>
+      <pre class="idl">
+        dictionary ThreeDSResponse {
+           required    DOMString       av;
+           required    DOMString       eci;
+           required    DOMString       status;
+         };
+      </pre>
+      <dl>
+        <dt>
+          <dfn>av</dfn> member
+        </dt>
+        <dd>
+          ...to be defined...
+        </dd>
+        <dt>
+          <dfn>eci</dfn> member
+        </dt>
+        <dd>
+          This member is an <a>Electronic Commerce Indicator</a>, a <a>Payment
+          Network</a>-specific string to indicate the results of user
+          authentication.
+        </dd>
+        <dt>
+          <dfn>status</dfn> member
+        </dt>
+        <dd>
+          ...to be defined...
+        </dd>
+      </dl>
+    </section>
+    <section id="howtouse">
+      <h2>
+        How to Use this Specification within a Payment Method Specification
+      </h2>
+      <p>
+        @@Todo: Describe how to reference this specification from within a
+        payment method specification.@@
+      </p>
+    </section>
+    <section id="dependencies">
+      <h2>
+        Dependencies
+      </h2>
+      <p>
+        This specification relies on several other underlying specifications.
+      </p>
+      <dl>
+        <dt>
+          Payment Request
+        </dt>
+        <dd>
+          The <dfn>PaymentRequest</dfn> and <dfn>PaymentResponse</dfn>
+          interfaces are defined in [[!payment-handler]]. That specification
+          also defines these terms: <dfn>data</dfn>.
+        </dd>
+        <dt>
+          Payment Handler
+        </dt>
+        <dd>
+          The term <dfn data-lt="payment handlers">payment handler</dfn> is
+          defined in [[!payment-handler]].
+        </dd>
+        <dt>
+          EMVCo 3-D Secure
+        </dt>
+        <dd>
+          The terms <dfn data-cite="!EMVCO-3DS">Electronic Commerce
+          Indicator</dfn> is defined in [[EMVCO-3DS]].
+        </dd>
+      </dl>
+    </section>
+  </body>
+</html>
