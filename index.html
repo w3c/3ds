@@ -252,6 +252,7 @@ new PaymentRequest(methodData, details);
            required    DOMString       av;
            required    DOMString       eci;
            required    DOMString       transStatus;
+           required    DOMString       dsTransID;
          };
       </pre>
       <dl>
@@ -281,6 +282,14 @@ new PaymentRequest(methodData, details);
           authenticated transaction or account verification. It is a
           1-character string whose <a>transaction status</a> values are defined
           in [[EMVCO-3DS]].
+        </dd>
+        <dt>
+          <dfn>dsTransID</dfn> member
+        </dt>
+        <dd>
+          This member is a universally unique transaction identifier assigned
+          by the Directory Server (DS) to identify a single transaction. It is
+          a 36-character string defined in [[EMVCO-3DS]].
         </dd>
       </dl>
       <p class="issue" data-number="3"></p>
@@ -322,10 +331,11 @@ new PaymentRequest(methodData, details);
         </dt>
         <dd>
           The terms <dfn data-cite="!EMVCO-3DS">Electronic Commerce
-          Indicator</dfn>, <dfn data-cite="!EMVCO-3DS">challenge flow</dfn>,
-          <dfn data-cite="!EMVCO-3DS">transaction status</dfn>, and
-          <dfn data-lt="Payment Network" data-cite="!EMVCO-3DS">Payment
-          Networks</dfn> are defined in [[EMVCO-3DS]].
+          Indicator</dfn>, <dfn data-cite="!EMVCO-3DS">Directory Server</dfn>,
+          <dfn data-cite="!EMVCO-3DS">challenge flow</dfn>, <dfn data-cite=
+          "!EMVCO-3DS">transaction status</dfn>, and <dfn data-lt=
+          "Payment Network" data-cite="!EMVCO-3DS">Payment Networks</dfn> are
+          defined in [[EMVCO-3DS]].
         </dd>
       </dl>
     </section>
