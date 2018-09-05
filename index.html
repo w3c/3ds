@@ -96,9 +96,10 @@
         <a>ThreeDSRequest</a> that is part of the payment method-specific
         <a>data</a> in the <a>PaymentRequest</a>.
         </li>
-        <li>The <a data-lt="ThreeDSRequest.requestLevel">requestLevel</a>
-        within the <a>ThreeDSRequest</a> contributes to the computation of
-        which <a>payment handlers</a> the user agent should offer to the user.
+        <li>The <a data-lt=
+        "ThreeDSRequest.payeeChallengeInd">payeeChallengeInd</a> within the <a>
+          ThreeDSRequest</a> contributes to the computation of which <a>payment
+          handlers</a> the user agent should offer to the user.
         </li>
         <li>Then the user selects a <a>payment handler</a> that supports 3DS2,
         the user agent provides relevant data to the <a>payment handler</a> to
@@ -135,7 +136,7 @@ const methodData = [{
     supportedNetworks: ['mastercard', 'visa', 'amex', 'discover', 'jcb', 'unionpay'],
     supportedTypes: ['credit','debit'],
     keyProviderURL: 'https://pspKeyProvider.example/tokenizedCardPublicKey',
-    requestLevel: required
+    payeeChallengeInd: mandated
     // Not yet shown: payeeData or whatever form it takes
   }
 }];
@@ -146,9 +147,9 @@ new PaymentRequest(methodData, details);
         </pre>
         <p>
           The value <code>required</code> for <a data-lt=
-          "ThreeDSRequest.requestLevel">requestLevel</a> means that the payee
-          requires that for this payment method, a <a>payment handler</a> must
-          support 3DS2.
+          "ThreeDSRequest.payeeChallengeInd">payeeChallengeInd</a> means that
+          the payee requires that for this payment method, a <a>payment
+          handler</a> must support 3DS2.
         </p>
       </section>
       <section>
@@ -180,7 +181,7 @@ new PaymentRequest(methodData, details);
       </p>
       <pre class="idl">
         dictionary ThreeDSRequest{
-                   ThreeDSRequestLevel          requestLevel;
+                   ThreeDSChallengeInd          payeeChallengeInd;
         };
       </pre>
       <p>
@@ -189,13 +190,14 @@ new PaymentRequest(methodData, details);
       </p>
       <dl>
         <dt>
-          <dfn>requestLevel</dfn>
+          <dfn>payeeChallengeInd</dfn>
         </dt>
         <dd>
-          This optional member represents the payee's requirements regarding
-          3DS flows for this payment method and this transaction. Absence of
-          this member means that the payee has not expressed a preference
-          regarding 3DS2 flows.
+          This optional member represents the payee's preferences regarding 3DS
+          flows for this payment method and this transaction. Absence of this
+          member means that the payee has not expressed a preference regarding
+          3DS2 flows. That corresponds to a value of <code>01</code> for the
+          <a>threeDSRequestorChallengeInd</a> in the 3DS2 specification.
           <p class="issue" data-number="6"></p>
         </dd>
         <dt>
@@ -208,49 +210,59 @@ new PaymentRequest(methodData, details);
           </p>
         </dd>
       </dl>
-      <section data-dfn-for="ThreeDSRequestLevel" data-link-for=
-      "ThreeDSRequestLevel">
+      <section data-dfn-for="ThreeDSChallengeInd" data-link-for=
+      "ThreeDSChallengeInd">
         <h3>
-          <dfn>ThreeDSRequestLevel</dfn> enum
+          <dfn>ThreeDSChallengeInd</dfn> enum
         </h3>
+        <p>
+          In the 3DS2 specification, the <a>threeDSRequestorChallengeInd</a>
+          field enables the <a>3DS Requestor</a> to express a preference
+          regarding the <a>challenge flow</a> for a transaction. In the Web
+          payments ecosystem, different parties may play the role of <a>3DS
+          Requestor</a>, including the payee and the <a>payment handler</a>. In
+          this, specification the <code>ThreeDSChallengeInd</code> refers
+          specifically to the preference of the payee, whether or not the payee
+          is the <a>3DS Requestor</a>. The values are defined to align with
+          those of the 3DS2 specification, but refer specifically to payee
+          preferences. Payment handler behavior will potentially depend on a
+          number of factors: the payee preferences defined below, but also user
+          preferences and other considerations as well.
+        </p>
         <pre class="idl">
-          enum ThreeDSRequestLevel { "required", "frictionless-only", "challenge-only", "none" };
+          enum ThreeDSChallengeInd { "requested", "mandated", "none" };
         </pre>
         <dl>
           <dt>
-            "<dfn>required</dfn>"
+            "<dfn>requested</dfn>"
           </dt>
           <dd>
-            The payee requires that, for this payment method and this
-            transaction, the <a>payment handler</a> MUST conduct a 3DS2 flow.
+            The payee requests that, for this payment method and this
+            transaction, the <a>payment handler</a> SHOULD conduct a 3DS2 flow.
             This is presumed to include both a <a>frictionless flow</a> and a
-            <a>challenge flow</a>.
+            <a>challenge flow</a>. This value corresponds to a value of
+            <code>03</code> for the <a>threeDSRequestorChallengeInd</a> in the
+            3DS2 specification.
           </dd>
           <dt>
-            "<dfn>frictionless-only</dfn>"
+            "<dfn>mandated</dfn>"
           </dt>
           <dd>
-            The payee requires that, for this payment method and this
-            transaction, the <a>payment handler</a> MUST conduct a 3DS2
-            <a>frictionless flow</a> and MUST NOT conduct a <a>challenge
-            flow</a>.
-          </dd>
-          <dt>
-            "<dfn>challenge-only</dfn>"
-          </dt>
-          <dd>
-            The payee requires that, for this payment method and this
-            transaction, the <a>payment handler</a> MUST NOT conduct a 3DS2
-            <a>frictionless flow</a> and MUST conduct a <a>challenge flow</a>.
+            The payee indicates that, for this payment method and this
+            transaction, the <a>payment handler</a> MUST conduct a 3DS2 flow
+            because it is mandated for the payee. This is presumed to include
+            both a <a>frictionless flow</a> and a <a>challenge flow</a>. This
+            value corresponds to a value of <code>04</code> for the
+            <a>threeDSRequestorChallengeInd</a> in the 3DS2 specification.
           </dd>
           <dt>
             "<dfn>none</dfn>"
           </dt>
           <dd>
-            The payee signals that, for this payment method and this
-            transaction, the <a>payment handler</a> MUST NOT conduct a 3DS2
-            flow, that is: neither the <a>frictionless flow</a> nor the
-            <a>challenge flow</a>.
+            The payee requests that, for this payment method and this
+            transaction, the <a>payment handler</a> SHOULD NOT conduct a 3DS2
+            flow. This value corresponds to a value of <code>02</code> for the
+            <a>threeDSRequestorChallengeInd</a> in the 3DS2 specification.
           </dd>
         </dl>
         <p class="issue">
@@ -261,14 +273,14 @@ new PaymentRequest(methodData, details);
       </section>
       <section>
         <h2>
-          Updating ThreeDSRequestLevel from onshippingaddresschange
+          Updating payeeChallengeInd from onshippingaddresschange
         </h2>
         <p class="issue">
           <a href="https://github.com/w3c/3ds/issues/8">From issue 8</a>: The
-          payee may wish to adjust <a>ThreeDSRequestLevel</a> depending on the
+          payee may wish to adjust <a>payeeChallengeInd</a> depending on the
           shipping address. Thus, for example, when
           <a>onshippingaddresschange</a> fires, the payee may wish to use
-          <a>updateWith()</a> to update the <a>ThreeDSRequestLevel</a>.
+          <a>updateWith()</a> to update the <a>payeeChallengeInd</a>.
         </p>
       </section>
       <section data-dfn-for="ThreeDSResponse" data-link-for="ThreeDSResponse">
@@ -393,9 +405,11 @@ new PaymentRequest(methodData, details);
             Server</dfn>, <dfn data-cite="!EMVCO-3DS">Directory Server</dfn>,
             <dfn data-cite="!EMVCO-3DS">transaction status</dfn>,
             <dfn data-cite="!EMVCO-3DS">frictionless flow</dfn>,
-            <dfn data-cite="!EMVCO-3DS">challenge flow</dfn>, and <dfn data-lt=
-            "Payment Network" data-cite="!EMVCO-3DS">Payment Networks</dfn> are
-            defined in [[EMVCO-3DS]].
+            <dfn data-cite="!EMVCO-3DS">challenge flow</dfn>, <dfn data-cite=
+            "!EMVCO-3DS">threeDSRequestorChallengeInd, <dfn data-cite=
+            "!EMVCO-3DS">3DS Requestor, and <dfn data-lt="Payment Network"
+            data-cite="!EMVCO-3DS">Payment Networks</dfn> are defined in
+            [[EMVCO-3DS]].</dfn></dfn>
           </dd>
         </dl>
       </section>
